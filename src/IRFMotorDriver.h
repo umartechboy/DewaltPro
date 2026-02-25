@@ -33,11 +33,14 @@ public:
     float GetSpeed() const;
     bool IsHardStopped() const;
     
-    // Call this frequently in your main loop() to generate the software PWM
-    void loop();
+    // Hardware timer now automatically generates PWM
+    void loop() {}
     
-    // Adjust PWM frequency if needed by setting the period (default 1000us = 1kHz)
-    void setPwmPeriod(uint32_t periodMicros);
+    // Adjust PWM frequency if needed by setting the period (default 100 loop cycles)
+    void setPwmPeriod(uint16_t periodCycles);
+    
+    // Internal method called by ISR
+    void _isr();
 
 private:
     uint8_t _pinHighA;
@@ -45,12 +48,14 @@ private:
     uint8_t _pinLowA;
     uint8_t _pinLowB;
     
-    float _currentPower;
-    bool _isEBreak;
+    volatile float _currentPower;
+    volatile bool _isEBreak;
     
-    uint32_t _pwmPeriod;
-    uint32_t _lastPwmUpdate;
+    uint16_t _pwmPeriod;
+    uint16_t _pwmCounter;
+    uint8_t  _appliedState;
 
+    void applyState(uint8_t s);
     void setPinsRight();
     void setPinsLeft();
     void setPinsIdle();

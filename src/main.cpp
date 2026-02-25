@@ -218,33 +218,13 @@ void loop() {
     uint32_t now = millis();
     
     // Read knob
-    float knob = readKnobFraction();
-    
-    // Button handling with edge detection
-    static bool lastNext = HIGH, lastPrev = HIGH;
-    bool nextPressed = (digitalRead(PIN_BUTTON_NEXT) == LOW);
-    bool prevPressed = (digitalRead(PIN_BUTTON_PREV) == LOW);
-    
-    // Mode switching
-    if ((nextPressed && !lastNext) || (prevPressed && !lastPrev)) {
-        modes[currentMode]->stop();
-        
-        if (nextPressed && !lastNext) {
-            currentMode = (currentMode + 1) % MODE_COUNT;
-        }
-        if (prevPressed && !lastPrev) {
-            currentMode = (currentMode + MODE_COUNT - 1) % MODE_COUNT;
-        }
-        
-        // Show centered mode title
-        display.showModeTitle(modes[currentMode]->getName());
-        
-        // Set display timeout
-        modeDisplayUntil = now + 1000;
+    static float knob = 0;
+    static uint32_t lastKnobRead = 0;
+    if (now - lastKnobRead > 10) {
+        knob = readKnobFraction();
+        lastKnobRead = now;
     }
-    
-    lastNext = nextPressed;
-    lastPrev = prevPressed;
+
     
     // Run current mode
     modes[currentMode]->loop(knob);
@@ -252,6 +232,35 @@ void loop() {
     static uint32_t lastDisplay = 0;
     if (now - lastDisplay > 40) {
         lastDisplay = now;
+
+        // Button handling with edge detection
+        static bool lastNext = HIGH, lastPrev = HIGH;
+        bool nextPressed = (digitalRead(PIN_BUTTON_NEXT) == LOW);
+        bool prevPressed = (digitalRead(PIN_BUTTON_PREV) == LOW);
+        
+        
+            
+        // Mode switching
+        if ((nextPressed && !lastNext) || (prevPressed && !lastPrev)) {
+            modes[currentMode]->stop();
+            
+            if (nextPressed && !lastNext) {
+                currentMode = (currentMode + 1) % MODE_COUNT;
+            }
+            if (prevPressed && !lastPrev) {
+                currentMode = (currentMode + MODE_COUNT - 1) % MODE_COUNT;
+            }
+            
+            // Show centered mode title
+            display.showModeTitle(modes[currentMode]->getName());
+            
+            // Set display timeout
+            modeDisplayUntil = now + 1000;
+        }
+            
+        lastNext = nextPressed;
+        lastPrev = prevPressed;
+        
         // Get display data
         float motorSpeed = irfMotor.GetSpeed();
         float sequenceProgress = modes[currentMode]->getSequenceProgress();
