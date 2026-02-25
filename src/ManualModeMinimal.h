@@ -17,7 +17,7 @@ public:
             motor->SetPower(knob * direction);
             setState(STATE_RUNNING);
         } else {
-            motor->SetPower(0);
+            motor->HardStop();
             setState(STATE_IDLE);
         }
     }
