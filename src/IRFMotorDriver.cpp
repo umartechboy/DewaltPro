@@ -11,7 +11,7 @@ ISR(TIMER2_COMPA_vect) {
 
 IRFMotorDriver::IRFMotorDriver(uint8_t pinHighA, uint8_t pinHighB, uint8_t pinLowA, uint8_t pinLowB) :
     _pinHighA(pinHighA), _pinHighB(pinHighB), _pinLowA(pinLowA), _pinLowB(pinLowB),
-    _currentPower(0.0f), _isEBreak(false), _pwmPeriod(100), _pwmCounter(0), _appliedState(255)
+    _currentPower(0.0f), _isEBreak(false), _timerOnTicks(0), _timerOffTicks(255), _isPwmHigh(false), _pwmPeriod(255), _appliedState(255)
 {
 }
 
@@ -24,18 +24,26 @@ void IRFMotorDriver::begin() {
     _irfMotorInstance = this;
     idle();
     
-    // Configure Timer2 for ~10kHz interrupts
+    // Configure Timer2
     noInterrupts();
     TCCR2A = 0;
     TCCR2B = 0;
     TCNT2  = 0;
     
-    // CTC Mode
-    TCCR2A |= (1 << WGM21);
-    // Prescaler 32 (16MHz/32 = 500kHz timer clock)
-    TCCR2B |= (1 << CS21) | (1 << CS20);
-    // CompA limit (500kHz / 50 = 10kHz interrupt -> 100us)
-    OCR2A = 49;
+    // Normal mode (we just let it overflow or reset TCNT2 manually)
+    // Actually, CTC Mode with OCR2A dictating the bounds is best.
+    TCCR2A |= (1 << WGM21); // CTC Mode
+    
+    // Prescaler 1024 -> 16MHz/1024 = 15.625kHz timer clock.
+    // That means each tick is 64 microseconds.
+    // 255 ticks = 16ms (roughly 60Hz PWM).
+    // Let's use Prescaler 256 for smoother motor driving (16MHz/256 = 62.5kHz).
+    // 255 ticks = 4ms (250Hz PWM).
+    TCCR2B |= (1 << CS22) | (1 << CS21); 
+    
+    // Start with a small default OFF period
+    OCR2A = 100;
+    
     // Enable CompA Interrupt
     TIMSK2 |= (1 << OCIE2A);
     interrupts();
@@ -61,9 +69,11 @@ void IRFMotorDriver::eBreak() {
 void IRFMotorDriver::setPower(float p) {
     if (p < -100.0f) p = -100.0f;
     if (p > 100.0f) p = 100.0f;
+    
     noInterrupts();
     _currentPower = p;
     _isEBreak = false;
+    calculateTimerTicks();
     interrupts();
 }
 
@@ -86,8 +96,28 @@ bool IRFMotorDriver::IsHardStopped() const {
     return _isEBreak;
 }
 
-void IRFMotorDriver::setPwmPeriod(uint16_t periodCycles) {
-    _pwmPeriod = periodCycles;
+void IRFMotorDriver::loop() {
+    // Left intentionally empty. Hardware timer automatically generates PWM.
+}
+
+
+
+void IRFMotorDriver::calculateTimerTicks() {
+    float p_abs = _currentPower >= 0 ? _currentPower : -_currentPower;
+
+    // Scale 0-100% directly to 0-255 timer ticks
+    uint16_t onTicks = (uint16_t)((p_abs / 100.0f) * _pwmPeriod);
+
+    if (onTicks == 0) {
+        _timerOnTicks = 0;
+        _timerOffTicks = _pwmPeriod;
+    } else if (onTicks >= _pwmPeriod) {
+        _timerOnTicks = _pwmPeriod;
+        _timerOffTicks = 0;
+    } else {
+        _timerOnTicks = (uint8_t)onTicks;
+        _timerOffTicks = _pwmPeriod - _timerOnTicks;
+    }
 }
 
 void IRFMotorDriver::applyState(uint8_t s) {
@@ -100,31 +130,36 @@ void IRFMotorDriver::applyState(uint8_t s) {
 }
 
 void IRFMotorDriver::_isr() {
-    if (_currentPower > -5 && _currentPower < 5) {
-        if (_isEBreak) {
-            applyState(3);
-        } else {
-            applyState(0);
-        }
+    // 1. Check Full ON / Full OFF Overrides First
+    if (_isEBreak) {
+        applyState(3); // E-break
+        OCR2A = 255;   // Fire whenever, it doesn't matter, we're locked
+        return;
+    }
+    
+    if (_timerOnTicks == 0) {
+        applyState(0); // Idle indefinitely
+        OCR2A = 255;
+        return;
+    }
+    
+    if (_timerOffTicks == 0) {
+        applyState(_currentPower > 0 ? 1 : 2); // Full power indefinitely
+        OCR2A = 255;
         return;
     }
 
-    _pwmCounter++;
-    if (_pwmCounter >= _pwmPeriod) {
-        _pwmCounter = 0;
-    }
-
-    float p_abs = _currentPower >= 0 ? _currentPower : -_currentPower;
-    uint16_t onTime = (uint16_t)((p_abs / 100.0f) * _pwmPeriod);
-
-    if (_pwmCounter < onTime) {
-        if (_currentPower > 0.0f) {
-            applyState(1);
-        } else {
-            applyState(2);
-        }
-    } else {
+    // 2. Fractional PWM Toggle Logic
+    if (_isPwmHigh) {
+        // Currently ON. We need to turn OFF.
         applyState(0);
+        OCR2A = _timerOffTicks;
+        _isPwmHigh = false;
+    } else {
+        // Currently OFF. We need to turn ON.
+        applyState(_currentPower > 0 ? 1 : 2);
+        OCR2A = _timerOnTicks;
+        _isPwmHigh = true;
     }
 }
 

@@ -32,12 +32,7 @@ public:
     void HardStop();
     float GetSpeed() const;
     bool IsHardStopped() const;
-    
-    // Hardware timer now automatically generates PWM
-    void loop() {}
-    
-    // Adjust PWM frequency if needed by setting the period (default 100 loop cycles)
-    void setPwmPeriod(uint16_t periodCycles);
+    void loop(); // Empty stub for backwards compatibility
     
     // Internal method called by ISR
     void _isr();
@@ -51,11 +46,16 @@ private:
     volatile float _currentPower;
     volatile bool _isEBreak;
     
-    uint16_t _pwmPeriod;
-    uint16_t _pwmCounter;
-    uint8_t  _appliedState;
+    volatile uint8_t _timerOnTicks;
+    volatile uint8_t _timerOffTicks;
+    volatile bool _isPwmHigh;
+    
+    // We target ~1kHz PWM, so with a 15.6kHz timer clock (prescaler 1024), 1 period = ~255 ticks for max resolution.
+    uint8_t _pwmPeriod;
+    uint8_t _appliedState;
 
     void applyState(uint8_t s);
+    void calculateTimerTicks();
     void setPinsRight();
     void setPinsLeft();
     void setPinsIdle();
