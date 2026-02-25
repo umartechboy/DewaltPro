@@ -34,6 +34,25 @@ void IRFMotorDriver::setPower(float p) {
     _isEBreak = false;
 }
 
+// Backwards compatibility methods
+void IRFMotorDriver::SetPower(float speed) {
+    if (speed < -1.0f) speed = -1.0f;
+    if (speed > 1.0f) speed = 1.0f;
+    setPower(speed * 100.0f);
+}
+
+void IRFMotorDriver::HardStop() {
+    eBreak();
+}
+
+float IRFMotorDriver::GetSpeed() const {
+    return _currentPower / 100.0f; // Scale back to -1.0 to 1.0
+}
+
+bool IRFMotorDriver::IsHardStopped() const {
+    return _isEBreak;
+}
+
 void IRFMotorDriver::setPwmPeriod(uint32_t periodMicros) {
     _pwmPeriod = periodMicros;
 }

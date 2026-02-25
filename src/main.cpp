@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <avr/wdt.h>
-#include "MotorControllerMinimal.h"
 #include "IRFMotorDriver.h"
 #include "DisplayManagerSmart.h"
 #include "ManualModeMinimal.h"
@@ -16,7 +15,6 @@
 #define PIN_ANALOG_KNOB A0
 
 // Objects
-MotorController motor(PIN_IN1, PIN_IN2, 0);  // Third parameter ignored for TA6586
 DisplayManager display;
 // In main.cpp, update your tapConfigs:
 // In main.cpp, define your tap configurations with different cycle counts:
@@ -152,7 +150,6 @@ void _540(int pin, int state){
 void setup() {
     Serial.begin(115200);
     irfMotor.begin();
-    return;
     delay(100);
     
     Serial.print(F("Free RAM: "));
@@ -160,9 +157,6 @@ void setup() {
     
     // Initialize I2C
     Wire.begin();
-    
-    // Initialize motor
-    motor.begin();
     
     // Initialize display
     if (!display.begin()) {
@@ -178,7 +172,7 @@ void setup() {
     
     // Link motor to all modes
     for (uint8_t i = 0; i < MODE_COUNT; i++) {
-        modes[i]->setMotor(&motor);
+        modes[i]->setMotor(&irfMotor);
         modes[i]->begin();
     }
     
@@ -217,7 +211,6 @@ void loop() {
             irfMotor.idle();
         }
     }
-    return;
     // Feed the watchdog timer
     wdt_reset();
     
@@ -255,42 +248,43 @@ void loop() {
     
     // Run current mode
     modes[currentMode]->loop(knob);
-    motor.UpdateHardStop();
     
-    // Get display data
-    float motorSpeed = motor.GetSpeed();
-    float sequenceProgress = modes[currentMode]->getSequenceProgress();
-    
-    // Update display
-    if (now < modeDisplayUntil) {
-        // Mode title display
-        if (nextPressed || prevPressed) {
-            // Refresh while holding
-            static uint32_t lastHoldRefresh = 0;
-            if (now - lastHoldRefresh > 300) {
-                display.showModeTitle(modes[currentMode]->getName());
-                lastHoldRefresh = now;
+    static uint32_t lastDisplay = 0;
+    if (now - lastDisplay > 40) {
+        lastDisplay = now;
+        // Get display data
+        float motorSpeed = irfMotor.GetSpeed();
+        float sequenceProgress = modes[currentMode]->getSequenceProgress();
+        
+        // Update display
+        if (now < modeDisplayUntil) {
+            // Mode title display
+            if (nextPressed || prevPressed) {
+                // Refresh while holding
+                static uint32_t lastHoldRefresh = 0;
+                if (now - lastHoldRefresh > 300) {
+                    display.showModeTitle(modes[currentMode]->getName());
+                    lastHoldRefresh = now;
+                }
             }
+        } else {
+            // Normal display
+            display.updateModeInfo(
+                modes[currentMode]->getName(),  // const char* modeName
+                currentMode,                    // uint8_t modeIndex  
+                motorSpeed,                     // float motorSpeed
+                sequenceProgress                // float sequenceProgress
+            );
         }
-    } else {
-        // Normal display
-        display.updateModeInfo(
-          modes[currentMode]->getName(),  // const char* modeName
-          currentMode,                    // uint8_t modeIndex  
-          motorSpeed,                     // float motorSpeed
-          sequenceProgress                // float sequenceProgress
-      );
+        // Optional: Debug output
+        static uint32_t lastDebug = 0;
+        if (now - lastDebug > 2000) {
+            Serial.print(F("Mode: "));
+            Serial.print(currentMode);
+            Serial.print(F(" Speed: "));
+            Serial.println(motorSpeed);
+            lastDebug = now;
+        }
     }
     
-    // Optional: Debug output
-    static uint32_t lastDebug = 0;
-    if (now - lastDebug > 2000) {
-        Serial.print(F("Mode: "));
-        Serial.print(currentMode);
-        Serial.print(F(" Speed: "));
-        Serial.println(motorSpeed);
-        lastDebug = now;
-    }
-    
-    delay(10);
 }

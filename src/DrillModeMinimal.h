@@ -2,14 +2,13 @@
 #define DRILL_MODE_MINIMAL_H
 
 #include <Arduino.h>
-
-class MotorController;
+#include "IRFMotorDriver.h"
 
 class DrillMode {
 protected:
     const char* name;
     uint8_t state;
-    MotorController* motor;
+    IRFMotorDriver* motor;
     
 public:
     static const uint8_t STATE_IDLE = 0;
@@ -25,12 +24,12 @@ public:
         return -1.0f; // Default: no sequence
     }
     
-    void setMotor(MotorController* m) { motor = m; }
+    void setMotor(IRFMotorDriver* m) { motor = m; }
     const char* getName() const { return name; }
     uint8_t getState() const { return state; }
     
 protected:
-    MotorController* getMotor() { return motor; }
+    IRFMotorDriver* getMotor() { return motor; }
     void setState(uint8_t s) { state = s; }
 };
 

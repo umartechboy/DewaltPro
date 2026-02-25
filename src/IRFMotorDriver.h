@@ -26,6 +26,13 @@ public:
     // Set power from -100.0 (Reverse/Left) to +100.0 (Forward/Right)
     void setPower(float p);
     
+    // BACKWARDS COMPATIBILITY METHODS
+    // Takes speed from -1.0 to 1.0 mapping to -100.0 to 100.0
+    void SetPower(float speed);
+    void HardStop();
+    float GetSpeed() const;
+    bool IsHardStopped() const;
+    
     // Call this frequently in your main loop() to generate the software PWM
     void loop();
     
