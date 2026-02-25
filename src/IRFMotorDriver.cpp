@@ -23,6 +23,7 @@ void IRFMotorDriver::idle() {
 void IRFMotorDriver::eBreak() {
     _currentPower = 0.0f;
     _isEBreak = true;
+    setPinsIdle();
     setPinsEBreak();
 }
 
@@ -38,7 +39,7 @@ void IRFMotorDriver::setPwmPeriod(uint32_t periodMicros) {
 }
 
 void IRFMotorDriver::loop() {
-    if (_currentPower == 0.0f) {
+    if (_currentPower > -5 && _currentPower < 5) {
         // Not driving, hold idle or eBreak continuously
         if (_isEBreak) {
             setPinsEBreak();
@@ -97,7 +98,6 @@ void IRFMotorDriver::setPinsIdle() {
 }
 
 void IRFMotorDriver::setPinsEBreak() {
-    setPinsIdle(); // Run idle states first, per the original function
     digitalWrite(_pinHighA, LOW);
     digitalWrite(_pinHighB, LOW);
     digitalWrite(_pinLowA,  LOW);

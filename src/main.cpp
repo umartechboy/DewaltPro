@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <avr/wdt.h>
 #include "MotorControllerMinimal.h"
+#include "IRFMotorDriver.h"
 #include "DisplayManagerSmart.h"
 #include "ManualModeMinimal.h"
 #include "MomentumModeMinimal.h"
@@ -140,56 +141,17 @@ int getFreeRam() {
 #define MB1 8
 #define MB2 7
 
+IRFMotorDriver irfMotor(MA1, MB2, MA2, MB1);
+
 void _9540(int pin, int state){
     digitalWrite(pin, state);
 }
 void _540(int pin, int state){
     digitalWrite(pin, state); // invert for IRF540
 }
-void _9540A(int state){
-    _9540(MA1, state);
-}
-void _9540B(int state){
-    _9540(MB2, state);
-}
-void _540A(int state){
-    _540(MA2, state);
-}
-void _540B(int state){
-    _540(MB1, state);
-}
-void motorIdle(){
-    _9540A(1);
-    _9540B(1);
-    _540A(0);
-    _540B(0);
-}
-void motorLeft(){
-    _9540A(1);
-    _9540B(0);
-    _540A(0);
-    _540B(1);
-}
-void motorRight(){
-    _9540B(1);
-    _9540A(0);
-    _540B(0);
-    _540A(1);
-}
-void motorEBreak(){
-    motorIdle();
-    _9540A(0);
-    _9540B(0);
-    _540A(0);
-    _540B(0);
-}
 void setup() {
     Serial.begin(115200);
-    pinMode(MA1, OUTPUT);
-    pinMode(MA2, OUTPUT);
-    pinMode(MB1, OUTPUT);
-    pinMode(MB2, OUTPUT);
-    motorIdle();
+    irfMotor.begin();
     return;
     delay(100);
     
@@ -227,24 +189,32 @@ void setup() {
     Serial.println(MODE_COUNT);
 }
 
+int motorPower = 0;
 void loop() {
+    irfMotor.loop();
     if (Serial.available()) {
         char b = Serial.read();
         if (b == 'a'){
-            motorLeft();
-            Serial.println("motorLeft");
+            motorPower += 10; if (motorPower > 100) motorPower = 100; // Cap at 100%
+            irfMotor.setPower(motorPower);
+            Serial.print(F("motorLeft: "));
+            Serial.println(motorPower);
         }
         else if (b == 'd'){
-            motorRight();
-            Serial.println("motorRight");
+            motorPower -= 10; if (motorPower < -100) motorPower = -100; // Cap at -100%
+            irfMotor.setPower(motorPower);
+            Serial.print(F("motorRight: "));
+            Serial.println(motorPower);
         }
         else if (b == 's'){
-            motorEBreak();
+            motorPower = 0;
+            irfMotor.eBreak();
             Serial.println("E-break");
         }
         else {
+            motorPower = 0;
             Serial.println("motorIdle");
-            motorIdle();
+            irfMotor.idle();
         }
     }
     return;
