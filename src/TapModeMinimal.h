@@ -4,7 +4,7 @@
 #include "DrillModeMinimal.h"
 
 // Maximum number of cycles we support (can be adjusted)
-#define MAX_CYCLES 5
+#define MAX_CYCLES 8
 
 struct TapCycle {
     float forwardSpeed;     // CW speed (0.0 to 1.0)

@@ -22,67 +22,43 @@ DisplayManager display;
 
 const TapConfig tapConfigs[] = {
     
-    // Acrylic 2mm - 2 identical cycles
+    // Acrylic
     {
-        "Tap Ac2", "Ac", 20, 3, 
+        "Tap Ac2-4", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
             // Both cycles same
-            {0.2f, 1200, 1.0f, 1000},
-            {0.1f, 100, -0.1f, 200}, // the direction changer. Don't directly reverse at 100% power
+            {0.2f, 1200, 1.0f, 1000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
+            {0.1f, 100, -0.1f, 200}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
             {-1.0f, 2000, -0.2f, 30 /* we don't actually need this one. */},
         }
     },
-    
-    // Acrylic 4mm - 4 cycles with increasing force
+
+    // Plastic
     {
-        "Tap Ac4", "Ac", 40, 4,  // 4 cycles
+        "Tap Pl2-6", "Pl", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
-            {0.3f, 500, -0.2f, 400},  // Gentle
-            {0.4f, 450, -0.3f, 350},  // Medium
-            {0.5f, 400, -0.4f, 300},  // Firm
-            {0.3f, 300, -0.9f, 150}   // Break through
+            // Both cycles same
+            {0.1f, 1200, 0.3f, 3000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
+            {0.05f, 100, -0.05f, 200}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
+            {-0.4f, 4000, -0.2f, 30 /* we don't actually need this one. */},
         }
     },
-    
-    // PLA 2mm - 1 cycle only
+
+    // Aluminum
     {
-        "Tap PL2", "PL", 20, 1,  // 1 cycle
+        "Tap Al2-6", "Al", 20 /* Redundant, can be anything */, 8 /* 8 array elements */, 
         {
-            {0.7f, 300, -0.6f, 250}
-            // Remaining cycles in array are unused but must exist
+            // Both cycles same
+            {0.2f, 1200, 0.8f, 1000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
+            {0.1f, 100, -0.1f, 100}, // direction changer
+            {-0.5f, 1000, -0.2f, 500}, // rewind at slower speed
+            {0.2f, 1200, 0.8f, 1000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
+            {0.1f, 100, -0.1f, 100}, // direction changer
+            {-0.5f, 1000, -0.2f, 500}, // rewind at slower speed
+            {0.1f, 100, -0.1f, 200},
+            {-1.0f, 2000, -0.2f, 30 /* we don't actually need this one. */},
         }
-    },
-    
-    // PLA 4mm - 3 cycles
-    {
-        "Tap PL4", "PL", 40, 3,  // 3 cycles
-        {
-            {0.5f, 400, -0.4f, 350},
-            {0.6f, 350, -0.5f, 300},
-            {0.4f, 200, -0.8f, 150}
-        }
-    },
-    
-    // PLA 6mm - 2 cycles
-    {
-        "Tap PL6", "PL", 60, 2,  // 2 cycles
-        {
-            {0.3f, 600, -0.2f, 500},
-            {0.4f, 400, -0.9f, 200}
-        }
-    },
-    // Aluminum 1.5mm - 3 cycles with different parameters
-    {
-        "Tap Al1.5", "Al", 15, 3,  // 3 cycles
-        {
-            // Cycle 1: Fast approach, medium retreat
-            {0.8f, 300, -0.7f, 250},
-            // Cycle 2: Medium approach, slow retreat
-            {0.6f, 400, -0.4f, 350},
-            // Cycle 3: Slow approach, fast retreat (break chip)
-            {0.4f, 500, -0.9f, 200}
-        }
-    },
+    }
 };
 
 // Note: We must initialize all MAX_CYCLES entries, but only the first 'numCycles' are used
@@ -94,16 +70,13 @@ ManualMode manualCCW("Manual CCW", -1);
 TapMode tap1(&tapConfigs[0]);
 TapMode tap2(&tapConfigs[1]);
 TapMode tap3(&tapConfigs[2]);
-TapMode tap4(&tapConfigs[3]);
-TapMode tap5(&tapConfigs[4]);
-TapMode tap6(&tapConfigs[5]);
 MomentumMode momentumCW("Momentum CW", 1);
 MomentumMode momentumCCW("Momentum CCW", -1);
 
 // Mode array
 DrillMode* modes[] = {
     &manualCW, &manualCCW,
-    &tap1, &tap2, &tap3, &tap4, &tap5, &tap6,
+    &tap1, &tap2, &tap3,
     &momentumCW, &momentumCCW
 };
 
