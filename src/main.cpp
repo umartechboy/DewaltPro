@@ -13,6 +13,7 @@
 #define PIN_BUTTON_NEXT 2
 #define PIN_BUTTON_PREV 3
 #define PIN_ANALOG_KNOB A0
+#define PIN_BATTERY_LEVEL A3
 
 // Objects
 DisplayManager display;
@@ -20,26 +21,15 @@ DisplayManager display;
 // In main.cpp, define your tap configurations with different cycle counts:
 
 const TapConfig tapConfigs[] = {
-    // Aluminum 1.5mm - 3 cycles with different parameters
-    {
-        "Tap Al1.5", "Al", 15, 3,  // 3 cycles
-        {
-            // Cycle 1: Fast approach, medium retreat
-            {0.8f, 300, -0.7f, 250},
-            // Cycle 2: Medium approach, slow retreat
-            {0.6f, 400, -0.4f, 350},
-            // Cycle 3: Slow approach, fast retreat (break chip)
-            {0.4f, 500, -0.9f, 200}
-        }
-    },
     
     // Acrylic 2mm - 2 identical cycles
     {
-        "Tap Ac2", "Ac", 20, 2,  // 2 cycles
+        "Tap Ac2", "Ac", 20, 3, 
         {
             // Both cycles same
-            {0.6f, 400, -0.5f, 350},
-            {0.6f, 400, -0.5f, 350}
+            {0.2f, 1200, 1.0f, 1000},
+            {0.1f, 100, -0.1f, 200}, // the direction changer. Don't directly reverse at 100% power
+            {-1.0f, 2000, -0.2f, 30 /* we don't actually need this one. */},
         }
     },
     
@@ -80,7 +70,19 @@ const TapConfig tapConfigs[] = {
             {0.3f, 600, -0.2f, 500},
             {0.4f, 400, -0.9f, 200}
         }
-    }
+    },
+    // Aluminum 1.5mm - 3 cycles with different parameters
+    {
+        "Tap Al1.5", "Al", 15, 3,  // 3 cycles
+        {
+            // Cycle 1: Fast approach, medium retreat
+            {0.8f, 300, -0.7f, 250},
+            // Cycle 2: Medium approach, slow retreat
+            {0.6f, 400, -0.4f, 350},
+            // Cycle 3: Slow approach, fast retreat (break chip)
+            {0.4f, 500, -0.9f, 200}
+        }
+    },
 };
 
 // Note: We must initialize all MAX_CYCLES entries, but only the first 'numCycles' are used
@@ -116,15 +118,18 @@ float readKnobFraction() {
     
     const float levels[] = {1.50f, 1.60f, 1.80f, 2.10f, 2.70f, 3.60f, 4.50f, 5.00f};
     
+    float fac = 0;
     for (int i = 1; i < 7; i++) {
         float transitionPoint = levels[i] - (levels[i] - levels[i-1]) * 0.2f;
         if (adc < transitionPoint) {
-            return (float)i / 6.0f;
+            fac = (float)i / 6.0f;
+            break;;
         }
     }
-    
+    // remap non linearly 0 => 0, 1 => 1 but 0.5 > 0.2
+    fac = powf(fac, 1.5f);
     if (adc >= 4.50f) return 1.0f;
-    return 1.0f;
+    return fac;
 }
 
 // Memory check (optional)
@@ -265,6 +270,14 @@ void loop() {
         float motorSpeed = irfMotor.GetSpeed();
         float sequenceProgress = modes[currentMode]->getSequenceProgress();
         
+        float voltageOnMax = 19.5F;
+        float voltageOnMin = 14.0F;
+        float currentVoltage = analogRead(PIN_BATTERY_LEVEL) * (40.0f / 1023.0f);
+        int batteryLevel = (currentVoltage - voltageOnMin) / (voltageOnMax - voltageOnMin) * 100;
+        if (batteryLevel > 100) batteryLevel = 100;
+        if (batteryLevel < 0) batteryLevel = 0;
+        // Serial.print(F("Battery Voltage: "));
+        // Serial.println(currentVoltage);
         // Update display
         if (now < modeDisplayUntil) {
             // Mode title display
@@ -282,7 +295,8 @@ void loop() {
                 modes[currentMode]->getName(),  // const char* modeName
                 currentMode,                    // uint8_t modeIndex  
                 motorSpeed,                     // float motorSpeed
-                sequenceProgress                // float sequenceProgress
+                sequenceProgress,                // float sequenceProgress
+                batteryLevel                     // int batteryLevel (0-100)
             );
         }
         // Optional: Debug output

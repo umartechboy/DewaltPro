@@ -217,7 +217,7 @@ private:
         sequenceActive = false;
         waitingForRelease = true;  // Set flag to wait for knob release
         setState(STATE_IDLE);
-        if (motor) motor->SetPower(0);
+        if (motor) motor->HardStop();
     }
     
     void stopSequence() {
@@ -227,7 +227,7 @@ private:
         currentStep = 0;
         completedTime = 0;
         setState(STATE_IDLE);
-        if (motor) motor->SetPower(0);
+        if (motor) motor->HardStop();
     }
 };
 

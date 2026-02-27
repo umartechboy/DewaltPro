@@ -56,7 +56,7 @@ public:
         } while (display.nextPage());
     }
     
-    void updateModeInfo(const char* modeName, uint8_t modeIndex, float motorSpeed, float sequenceProgress) {
+    void updateModeInfo(const char* modeName, uint8_t modeIndex, float motorSpeed, float sequenceProgress, int batterytLevel = 50) {
         unsigned long now = millis();
         if (now - lastUpdate < 40) return;
         lastUpdate = now;
@@ -67,7 +67,7 @@ public:
             // White background
             display.drawBox(0, 0, 128, 20);
             display.setDrawColor(0); // Black text on white
-            
+                        
             // Proper text positioning for 6x10 font
             int nameY = 13; // Baseline for 6x10 font in 20px bar
             int nameWidth = getTextWidth(modeName);
@@ -83,6 +83,12 @@ public:
             display.setCursor(128 - numWidth - 5, nameY);
             display.print(modeNum);
             
+            // Battery level indicator on the left (for future use, currently just a placeholder)
+            display.drawFrame(5, 5, 20, 10);
+            int fillWidth = 18 - (batterytLevel / 100.0f) * 18;  
+            display.drawBox(6 + (18 - fillWidth), 6, fillWidth, 8);
+            
+
             // Reset drawing color
             display.setDrawColor(1);
             
