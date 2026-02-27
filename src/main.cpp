@@ -29,27 +29,36 @@ DisplayManager display;
 
 const TapConfig tapConfigs[] = {
     
-    // Full speed, 3 seconds
+    // Full speed, 2 seconds
     {
-        "Tap 100-2s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        "Tap 1 2s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
             // Both cycles same
-            {0.1f, 500, 1.0f, 300}, // Slow start for the tap to begin, full ahead at 100% for 1 second
-            {0.1f, 100, -0.1f, 100}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
-            {-1.0f, 1200, -0.2f, 30 /* we don't actually need this one. */},
+            {0.1f, 500, 1.0f, 300},
+            {0.1f, 100, -0.1f, 100},
+            {-1.0f, 600, -0.2f, 30 },
         }
     },
-    // Full speed, 5 seconds
+    // Medium speed, 3 seconds
     {
-        "Tap 100-4s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        "Tap 2 3s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
             // Both cycles same
-            {0.2f, 1200, 1.0f, 1000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
-            {0.1f, 100, -0.1f, 200}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
-            {-1.0f, 2000, -0.2f, 30 /* we don't actually need this one. */},
+            {0.1f, 800, 0.4f, 600},
+            {0.1f, 100, -0.1f, 100},
+            {-0.6f, 1000, -0.2f, 30 },
         }
     },
-
+    // Medium slow, 6 seconds
+    {
+        "Tap 3 6s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        {
+            // Both cycles same
+            {0.1f, 1500, 0.3f, 1100},
+            {0.1f, 100, -0.1f, 300},
+            {-0.5f, 1400, -0.2f, 30 },
+        }
+    },
     // Aluminum
     {
         "Tap Al2-6", "Al", 20 /* Redundant, can be anything */, 8 /* 8 array elements */, 
