@@ -2,6 +2,7 @@
 #define TAP_MODE_MINIMAL_H
 
 #include "DrillModeMinimal.h"
+#include "DataLogger.h"
 
 // Maximum number of cycles we support (can be adjusted)
 #define MAX_CYCLES 8
@@ -152,6 +153,7 @@ private:
         setState(STATE_RUNNING);
         
         // Start first step
+        DataLogger::incrementTapStarts();
         applyCurrentStep();
     }
     
@@ -217,6 +219,7 @@ private:
         sequenceActive = false;
         waitingForRelease = true;  // Set flag to wait for knob release
         setState(STATE_IDLE);
+        DataLogger::incrementTapEnds();
         if (motor) motor->HardStop();
     }
     

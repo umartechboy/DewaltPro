@@ -62,4 +62,7 @@ private:
     void setPinsEBreak();
 };
 
+
+extern IRFMotorDriver irfMotor;
+
 #endif // IRFMOTORDRIVER_H

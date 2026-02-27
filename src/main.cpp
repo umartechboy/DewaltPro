@@ -6,6 +6,8 @@
 #include "ManualModeMinimal.h"
 #include "MomentumModeMinimal.h"
 #include "TapModeMinimal.h"
+#include "DataLogger.h"
+#include "Music.h"
 
 // Pin definitions
 #define PIN_IN1 5
@@ -14,6 +16,13 @@
 #define PIN_BUTTON_PREV 3
 #define PIN_ANALOG_KNOB A0
 #define PIN_BATTERY_LEVEL A3
+
+#define MA1 5
+#define MA2 6
+#define MB1 8
+#define MB2 7
+
+IRFMotorDriver irfMotor(MA1, MB2, MA2, MB1);
 
 // Objects
 DisplayManager display;
@@ -112,13 +121,6 @@ int getFreeRam() {
     return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-#define MA1 5
-#define MA2 6
-#define MB1 8
-#define MB2 7
-
-IRFMotorDriver irfMotor(MA1, MB2, MA2, MB1);
-
 void _9540(int pin, int state){
     digitalWrite(pin, state);
 }
@@ -127,6 +129,8 @@ void _540(int pin, int state){
 }
 void setup() {
     Serial.begin(115200);
+    Serial.setTimeout(100);
+    DataLogger::init();
     irfMotor.begin();
     delay(100);
     
@@ -167,25 +171,75 @@ void loop() {
     if (Serial.available()) {
         char b = Serial.read();
         if (b == 'a'){
-            motorPower += 10; if (motorPower > 100) motorPower = 100; // Cap at 100%
+            motorPower += 10;
+            if (motorPower > 100) motorPower = 100; // Cap at 100%
             irfMotor.setPower(motorPower);
             Serial.print(F("motorLeft: "));
             Serial.println(motorPower);
         }
         else if (b == 'd'){
-            motorPower -= 10; if (motorPower < -100) motorPower = -100; // Cap at -100%
+            motorPower -= 10;
+            if (motorPower < -100) motorPower = -100; // Cap at -100%
             irfMotor.setPower(motorPower);
             Serial.print(F("motorRight: "));
             Serial.println(motorPower);
         }
-        else if (b == 's'){
-            motorPower = 0;
-            irfMotor.eBreak();
-            Serial.println("E-break");
+        else if (b == 's' || b == 'S'){
+            if (Serial.peek() == '-' || (Serial.peek() >= '0' && Serial.peek() <= '9')) {
+                motorPower = Serial.parseInt();
+                if (motorPower > 100) motorPower = 100;
+                if (motorPower < -100) motorPower = -100;
+                irfMotor.setPower(motorPower);
+                Serial.print(F("motorSet: "));
+                Serial.println(motorPower);
+            } else {
+                motorPower = 0;
+                irfMotor.eBreak();
+                Serial.println(F("E-break"));
+            }
+        }
+        else if (b == 'm' || b == 'M'){
+            playRTTTL(NOKIA_RTTTL);
+        }
+        else if (b == 'l' || b == 'L'){
+            DataLogger::dumpLogs();
+        }
+        else if (b == 'c' || b == 'C'){
+            Serial.println(F("--- System Status ---"));
+            Serial.print(F("Current Mode:  ")); Serial.println(modes[currentMode]->getName());
+            
+            float currentVoltage = analogRead(PIN_BATTERY_LEVEL) * (40.0f / 1023.0f);
+            Serial.print(F("Battery:       ")); Serial.print(currentVoltage); Serial.println(F("V"));
+            
+            Serial.print(F("Motor Speed:   ")); Serial.println(irfMotor.GetSpeed());
+            Serial.print(F("Free RAM:      ")); Serial.println(getFreeRam());
+            
+            Serial.println(F("Pin States:"));
+            for (int pin = 0; pin <= 19; pin++) {
+                if (pin <= 5 || (pin >= 14 && pin <= 19)) {
+                    Serial.print(F("D")); Serial.print(pin); Serial.print(F(":")); Serial.print(digitalRead(pin)); Serial.print(F(" "));
+                } else {
+                    Serial.print(F("A")); Serial.print(pin - 14); Serial.print(F(":")); Serial.print(analogRead(pin)); Serial.print(F(" "));
+                }
+                if (pin % 7 == 6) Serial.println();
+            }
+            Serial.println();
+            Serial.println(F("---------------------"));
+        }
+        else if (b == 'h' || b == 'H'){
+            Serial.println(F("--- Available Commands ---"));
+            Serial.println(F("a: Increase power by 10"));
+            Serial.println(F("d: Decrease power by 10"));
+            Serial.println(F("s: Emergency Break"));
+            Serial.println(F("s[nnn]: Set speed (-100 to 100)"));
+            Serial.println(F("l/L: Dump EEPROM Logs"));
+            Serial.println(F("c/C: Show System Status"));
+            Serial.println(F("h/H: Show this help"));
+            Serial.println(F("--- Any other key to IDLE ---"));
         }
         else {
             motorPower = 0;
-            Serial.println("motorIdle");
+            Serial.println(F("motorIdle"));
             irfMotor.idle();
         }
     }
@@ -275,10 +329,10 @@ void loop() {
         // Optional: Debug output
         static uint32_t lastDebug = 0;
         if (now - lastDebug > 2000) {
-            Serial.print(F("Mode: "));
-            Serial.print(currentMode);
-            Serial.print(F(" Speed: "));
-            Serial.println(motorSpeed);
+            // Serial.print(F("Mode: "));
+            // Serial.print(currentMode);
+            // Serial.print(F(" Speed: "));
+            // Serial.println(motorSpeed);
             lastDebug = now;
         }
     }

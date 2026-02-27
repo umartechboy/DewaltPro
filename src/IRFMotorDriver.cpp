@@ -166,14 +166,14 @@ void IRFMotorDriver::_isr() {
 // Low-level pin toggles replicating the original functionality.
 // Writing to the outputs sequentially as original reference implementation.
 
-void IRFMotorDriver::setPinsLeft() {
+void IRFMotorDriver::setPinsRight() {
     digitalWrite(_pinHighA, HIGH);
     digitalWrite(_pinHighB, LOW);
     digitalWrite(_pinLowA,  LOW);
     digitalWrite(_pinLowB,  HIGH);
 }
 
-void IRFMotorDriver::setPinsRight() {
+void IRFMotorDriver::setPinsLeft() {
     digitalWrite(_pinHighB, HIGH);
     digitalWrite(_pinHighA, LOW);
     digitalWrite(_pinLowB,  LOW);
@@ -193,3 +193,4 @@ void IRFMotorDriver::setPinsEBreak() {
     digitalWrite(_pinLowA,  LOW);
     digitalWrite(_pinLowB,  LOW);
 }
+
