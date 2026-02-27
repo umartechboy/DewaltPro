@@ -7,8 +7,6 @@
 #include "MomentumModeMinimal.h"
 #include "TapModeMinimal.h"
 #include "DataLogger.h"
-#include "Music.h"
-
 // Pin definitions
 #define PIN_IN1 5
 #define PIN_IN2 6
@@ -31,25 +29,24 @@ DisplayManager display;
 
 const TapConfig tapConfigs[] = {
     
-    // Acrylic
+    // Full speed, 3 seconds
     {
-        "Tap Ac2-4", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        "Tap 100-2s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        {
+            // Both cycles same
+            {0.1f, 500, 1.0f, 300}, // Slow start for the tap to begin, full ahead at 100% for 1 second
+            {0.1f, 100, -0.1f, 100}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
+            {-1.0f, 1200, -0.2f, 30 /* we don't actually need this one. */},
+        }
+    },
+    // Full speed, 5 seconds
+    {
+        "Tap 100-4s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
             // Both cycles same
             {0.2f, 1200, 1.0f, 1000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
             {0.1f, 100, -0.1f, 200}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
             {-1.0f, 2000, -0.2f, 30 /* we don't actually need this one. */},
-        }
-    },
-
-    // Plastic
-    {
-        "Tap Pl2-6", "Pl", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
-        {
-            // Both cycles same
-            {0.1f, 1200, 0.3f, 3000}, // Slow start for the tap to begin, full ahead at 100% for 1 second
-            {0.05f, 100, -0.05f, 200}, // the direction changer. Don't directly reverse at 100% power, instead, first slow down to 10% power for 200ms, and then reverse.
-            {-0.4f, 4000, -0.2f, 30 /* we don't actually need this one. */},
         }
     },
 
@@ -197,9 +194,6 @@ void loop() {
                 irfMotor.eBreak();
                 Serial.println(F("E-break"));
             }
-        }
-        else if (b == 'm' || b == 'M'){
-            playRTTTL(NOKIA_RTTTL);
         }
         else if (b == 'l' || b == 'L'){
             DataLogger::dumpLogs();
