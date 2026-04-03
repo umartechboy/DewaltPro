@@ -49,14 +49,14 @@ const TapConfig tapConfigs[] = {
             {-0.6f, 1000, -0.2f, 30 },
         }
     },
-    // Medium slow, 6 seconds
+    // Full speed, 2 seconds
     {
-        "Tap 3 6s", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
+        "Tap 3 2s S", "Ac", 20 /* Redundant, can be anything */, 3 /* 3 array elements */, 
         {
             // Both cycles same
-            {0.1f, 1500, 0.3f, 1100},
-            {0.1f, 100, -0.1f, 300},
-            {-0.5f, 1400, -0.2f, 30 },
+            {0.1f, 300, 0.4f, 200},
+            {0.1f, 100, -0.1f, 100},
+            {-0.4f, 400, -0.2f, 30 },
         }
     },
     // Aluminum
